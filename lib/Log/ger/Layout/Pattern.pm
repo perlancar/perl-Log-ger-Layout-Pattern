@@ -158,7 +158,7 @@ Known placeholder in format string:
  %r Number of seconds elapsed from program start to logging event
  %R Number of seconds elapsed from last logging event to current
     logging event
-           %T A stack trace of functions called
+ %T A stack trace of functions called
  %% A literal percent (%) sign
 
 
