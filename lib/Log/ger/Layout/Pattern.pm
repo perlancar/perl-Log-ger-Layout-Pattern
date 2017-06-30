@@ -166,5 +166,5 @@ Known placeholder in format string:
 
 L<Log::ger>
 
-Modelled after <Log::Log4perl::Layout::Pattern> but note that full compatibility
-or feature parity is not a goal. See also L<Log::Log4perl::Tiny>.
+Modelled after L<Log::Log4perl::Layout::Pattern> but note that full
+compatibility or feature parity is not a goal. See also L<Log::Log4perl::Tiny>.
