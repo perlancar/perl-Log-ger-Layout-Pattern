@@ -19,7 +19,7 @@ my %per_message_data;
 
 our %format_for = (
     'c' => sub { $_[1]{category} },
-    'C' => sub { $per_message_data{caller}[0] },
+    'C' => sub { $per_message_data{caller0}[0] },
     'd' => sub {
         my @t = localtime($time_now);
         sprintf(
@@ -36,7 +36,7 @@ our %format_for = (
             $t[2], $t[1], $t[0],
         );
     },
-    'F' => sub { $per_message_data{caller}[1] },
+    'F' => sub { $per_message_data{caller0}[1] },
     'H' => sub {
         require Sys::Hostname;
         Sys::Hostname::hostname();
@@ -44,16 +44,15 @@ our %format_for = (
     'l' => sub {
         sprintf(
             "%s (%s:%d)",
-            $per_message_data{caller}[3],
-            $per_message_data{caller}[1],
-            $per_message_data{caller}[2],
+            $per_message_data{caller1}[3] // '',
+            $per_message_data{caller0}[1],
+            $per_message_data{caller0}[2],
         );
     },
-    'L' => sub { $per_message_data{caller}[2] },
+    'L' => sub { $per_message_data{caller0}[2] },
     'm' => sub { $_[0] },
     'M' => sub {
-        (my $sub = $per_message_data{caller}[3]) =~ s/.+:://;
-        $sub;
+        $per_message_data{caller1}[3] // '';
     },
     'n' => sub { "\n" },
     'p' => sub { $_[3] },
@@ -86,23 +85,26 @@ sub _layout {
         }
     }
 
-    if (
-        1 ||
-            $mentioned_formats{C} ||
+    if ($mentioned_formats{C} ||
             $mentioned_formats{F} ||
-            $mentioned_formats{l} ||
             $mentioned_formats{L} ||
-            $mentioned_formats{M} ||
-            0) {
-        $per_message_data{caller}  =
+            $mentioned_formats{l}
+        ) {
+        $per_message_data{caller0}  =
+            [Devel::Caller::Util::caller (0, 0, $packages_to_ignore, $subroutines_to_ignore)];
+    }
+    if ($mentioned_formats{l} ||
+            $mentioned_formats{M}
+        ) {
+        $per_message_data{caller1}  =
             [Devel::Caller::Util::caller (1, 0, $packages_to_ignore, $subroutines_to_ignore)];
     }
     if ($mentioned_formats{T}) {
         $per_message_data{callers} =
-            [Devel::Caller::Util::callers(1, 0, $packages_to_ignore, $subroutines_to_ignore)];
+            [Devel::Caller::Util::callers(0, 0, $packages_to_ignore, $subroutines_to_ignore)];
     }
 
-    $format =~ s/%(.)/$format_for{$1}->(@_)/eg;
+    $format =~ s#%(.)#$format_for{$1}->(@_)#eg;
     $format;
 }
 
@@ -114,9 +116,6 @@ sub get_hooks {
         "Log::ger",
         "Log::ger::Layout::Pattern",
         "Try::Tiny",
-    ];
-    $conf{subroutines_to_ignore} //= [
-        "Log::ger::__ANON__",
     ];
 
     return {
@@ -186,3 +185,5 @@ L<Log::ger>
 
 Modelled after L<Log::Log4perl::Layout::Pattern> but note that full
 compatibility or feature parity is not a goal. See also L<Log::Log4perl::Tiny>.
+
+L<Log::ger::Layout::LTSV>
