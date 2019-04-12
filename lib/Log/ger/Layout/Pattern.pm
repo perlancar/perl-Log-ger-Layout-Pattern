@@ -7,24 +7,19 @@ use 5.010001;
 use strict;
 use warnings;
 
+use Devel::Caller::Util;
 use Log::ger ();
 use Time::HiRes qw(time);
-
-our $caller_depth_offset = 4;
 
 our $time_start = time();
 our $time_now   = $time_start;
 our $time_last  = $time_start;
 
-my @per_message_data;
+my %per_message_data;
 
 our %format_for = (
     'c' => sub { $_[1]{category} },
-    'C' => sub {
-        $per_message_data[0] //= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset)];
-        $per_message_data[1] //= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset-1)];
-        $per_message_data[0][0] // $per_message_data[1][0];
-    },
+    'C' => sub { $per_message_data{caller}[0] },
     'd' => sub {
         my @t = localtime($time_now);
         sprintf(
@@ -41,36 +36,23 @@ our %format_for = (
             $t[2], $t[1], $t[0],
         );
     },
-    'F' => sub {
-        $per_message_data[0] //= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset)];
-        $per_message_data[1] //= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset-1)];
-        $per_message_data[0][1] // $per_message_data[1][1];
-    },
+    'F' => sub { $per_message_data{caller}[1] },
     'H' => sub {
         require Sys::Hostname;
         Sys::Hostname::hostname();
     },
     'l' => sub {
-        $per_message_data[0] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset)];
-        $per_message_data[1] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset-1)];
         sprintf(
             "%s (%s:%d)",
-            $per_message_data[0][3] // $per_message_data[1][3],
-            $per_message_data[1][1],
-            $per_message_data[1][2],
+            $per_message_data{caller}[3],
+            $per_message_data{caller}[1],
+            $per_message_data{caller}[2],
         );
     },
-    'L' => sub {
-        #$per_message_data[0] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset)];
-        $per_message_data[1] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset-1)];
-        $per_message_data[1][2];
-    },
+    'L' => sub { $per_message_data{caller}[2] },
     'm' => sub { $_[0] },
     'M' => sub {
-        $per_message_data[0] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset)];
-        $per_message_data[1] ||= [caller($Log::ger::Caller_Depth_Offset+$caller_depth_offset-1)];
-        my $sub = $per_message_data[0][3] // $per_message_data[1][3];
-        $sub =~ s/.+:://;
+        (my $sub = $per_message_data{caller}[3]) =~ s/.+:://;
         $sub;
     },
     'n' => sub { "\n" },
@@ -79,19 +61,8 @@ our %format_for = (
     'r' => sub { sprintf("%.3f", $time_now - $time_start) },
     'R' => sub { sprintf("%.3f", $time_now - $time_last ) },
     'T' => sub {
-        $per_message_data[2] //= do {
-            my @st;
-            my $i = $Log::ger::Caller_Depth_Offset+$caller_depth_offset-1;
-            while (my @c = caller($i++)) {
-                push @st, \@c;
-            }
-            \@st;
-        };
-        my $st = '';
-        for my $frame (@{ $per_message_data[2] }) {
-            $st .= "$frame->[3] ($frame->[1]:$frame->[2])\n";
-        }
-        $st;
+        join(", ", map { "$_->[3] called at $_->[1] line $_->[2]" }
+                 @{ $per_message_data{callers} });
     },
     # test
     #'z' => sub { use DD; my $i = 0; while (my @c = caller($i++)) { dd \@c } },
@@ -100,14 +71,38 @@ our %format_for = (
 
 sub _layout {
     my $format = shift;
-    #my ($msg, $init_args, $lnum, $level) = @_;
+    my $packages_to_ignore = shift;
+    my $subroutines_to_ignore = shift;
 
     ($time_last, $time_now) = ($time_now, time());
-    @per_message_data = ();
+    %per_message_data = ();
 
-    $format =~ s/%(.)/
-        exists $format_for{$1} ? $format_for{$1}->(@_) :
-        die("Unknown format '%$1'")/eg;
+    my %mentioned_formats;
+    while ($format =~ m/%(.)/g) {
+        if (exists $format_for{$1}) {
+            $mentioned_formats{$1} = 1;
+        } else {
+            die "Unknown format '%$1'";
+        }
+    }
+
+    if (
+        1 ||
+            $mentioned_formats{C} ||
+            $mentioned_formats{F} ||
+            $mentioned_formats{l} ||
+            $mentioned_formats{L} ||
+            $mentioned_formats{M} ||
+            0) {
+        $per_message_data{caller}  =
+            [Devel::Caller::Util::caller (1, 0, $packages_to_ignore, $subroutines_to_ignore)];
+    }
+    if ($mentioned_formats{T}) {
+        $per_message_data{callers} =
+            [Devel::Caller::Util::callers(1, 0, $packages_to_ignore, $subroutines_to_ignore)];
+    }
+
+    $format =~ s/%(.)/$format_for{$1}->(@_)/eg;
     $format;
 }
 
@@ -115,12 +110,20 @@ sub get_hooks {
     my %conf = @_;
 
     $conf{format} or die "Please specify format";
+    $conf{packages_to_ignore} //= [
+        "Log::ger",
+        "Log::ger::Layout::Pattern",
+        "Try::Tiny",
+    ];
+    $conf{subroutines_to_ignore} //= [
+        "Log::ger::__ANON__",
+    ];
 
     return {
         create_layouter => [
             __PACKAGE__, 50,
             sub {
-                [sub { _layout($conf{format}, @_) }];
+                [sub { _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_) }];
             }],
     };
 }
@@ -160,6 +163,21 @@ Known placeholder in format string:
     logging event
  %T A stack trace of functions called
  %% A literal percent (%) sign
+
+
+=head1 CONFIGURATION
+
+=head2 format
+
+=head2 packages_to_ignore
+
+Regex or arrayref. When producing caller or stack trace information, will pass
+this to L<Devel::Caller::Util>'s C<caller()> or C<callers()>.
+
+=head2 subroutines_to_ignore
+
+Regex or arrayref. When producing caller or stack trace information, will pass
+this to L<Devel::Caller::Util>'s C<caller()> or C<callers()>.
 
 
 =head1 SEE ALSO
