@@ -2,7 +2,7 @@
 
 	- Instead of using offsets, use Devel::Caller::Util's
 	  caller()/callers() that can ignore certain subs/packages for more
-	  friendly caller/stack trace information.
+	  friendly caller/stack trace information. [ref: GH#1]
 
 
 0.002   2019-03-26 (PERLANCAR)
