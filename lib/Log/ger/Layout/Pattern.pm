@@ -120,9 +120,12 @@ sub get_hooks {
 
     return {
         create_layouter => [
-            __PACKAGE__, 50,
+            __PACKAGE__,
+            50,
             sub {
-                [sub { _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_) }];
+                my %hook_args = @_;
+                [sub {
+                     _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_) }];
             }],
     };
 }
