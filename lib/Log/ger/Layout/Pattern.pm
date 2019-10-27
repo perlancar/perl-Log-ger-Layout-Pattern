@@ -120,12 +120,14 @@ sub get_hooks {
 
     return {
         create_layouter => [
-            __PACKAGE__,
-            50,
-            sub {
+            __PACKAGE__, # key
+            50,          # priority
+            sub {        # hook
                 my %hook_args = @_;
-                [sub {
-                     _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_) }];
+                my $layouter = sub {
+                    _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_);
+                };
+                [$layouter];
             }],
     };
 }
