@@ -1,6 +1,8 @@
 package Log::ger::Layout::Pattern;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
@@ -123,7 +125,7 @@ sub get_hooks {
             __PACKAGE__, # key
             50,          # priority
             sub {        # hook
-                my %hook_args = @_;
+                my %hook_args = @_; # see Log::ger::Manual::Internals/"Arguments passed to hook"
                 my $layouter = sub {
                     _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_);
                 };
