@@ -1,6 +1,8 @@
 package Log::ger::Layout::Pattern;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
@@ -109,10 +111,10 @@ sub _layout {
 }
 
 sub get_hooks {
-    my %conf = @_;
+    my %plugin_conf = @_;
 
-    $conf{format} or die "Please specify format";
-    $conf{packages_to_ignore} //= [
+    $plugin_conf{format} or die "Please specify format";
+    $plugin_conf{packages_to_ignore} //= [
         "Log::ger",
         "Log::ger::Layout::Pattern",
         "Try::Tiny",
@@ -125,7 +127,7 @@ sub get_hooks {
             sub {        # hook
                 my %hook_args = @_;
                 my $layouter = sub {
-                    _layout($conf{format}, $conf{packages_to_ignore}, $conf{subroutines_to_ignore}, @_);
+                    _layout($plugin_conf{format}, $plugin_conf{packages_to_ignore}, $plugin_conf{subroutines_to_ignore}, @_);
                 };
                 [$layouter];
             }],
