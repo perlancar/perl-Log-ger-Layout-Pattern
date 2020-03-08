@@ -125,7 +125,7 @@ sub get_hooks {
             __PACKAGE__, # key
             50,          # priority
             sub {        # hook
-                my %hook_args = @_;
+                my %hook_args = @_; # see Log::ger::Manual::Internals/"Arguments passed to hook"
                 my $layouter = sub {
                     _layout($plugin_conf{format}, $plugin_conf{packages_to_ignore}, $plugin_conf{subroutines_to_ignore}, @_);
                 };
