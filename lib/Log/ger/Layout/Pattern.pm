@@ -70,6 +70,10 @@ our %format_for = (
     '%' => sub { '%' },
 );
 
+sub meta { +{
+    v => 1,
+} }
+
 sub _layout {
     my $format = shift;
     my $packages_to_ignore = shift;
