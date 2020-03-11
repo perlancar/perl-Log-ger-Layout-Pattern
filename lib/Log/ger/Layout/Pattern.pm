@@ -71,7 +71,7 @@ our %format_for = (
 );
 
 sub meta { +{
-    v => 1,
+    v => 2,
 } }
 
 sub _layout {
