@@ -194,7 +194,7 @@ this to L<Devel::Caller::Util>'s C<caller()> or C<callers()>.
 
 L<Log::ger::Layout::Pattern::Multiline>
 
-Modelled after L<Log::Log4perl::Layout::Pattern> but note that full
+Modelled after L<Log::Log4perl::Layout::PatternLayout> but note that full
 compatibility or feature parity is not a goal. See also L<Log::Log4perl::Tiny>.
 
 L<Log::ger>
