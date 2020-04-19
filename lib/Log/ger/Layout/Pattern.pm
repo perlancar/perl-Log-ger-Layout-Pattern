@@ -18,6 +18,7 @@ our $time_now   = $time_start;
 our $time_last  = $time_start;
 
 my %per_message_data;
+my %cache;
 
 our %format_for = (
     'c' => sub { $_[1]{category} },
@@ -65,6 +66,17 @@ our %format_for = (
         join(", ", map { "$_->[3] called at $_->[1] line $_->[2]" }
                  @{ $per_message_data{callers} });
     },
+    '_{vmsize}' => sub {
+        unless ($cache{pid_stat_time} &&
+                $cache{pid_stat_time} >= $time_now-1) {
+            open my $fh, "/proc/$$/stat" or die;
+            $cache{pid_stat} = [split /\s+/, scalar(<$fh>)];
+            $cache{pid_stat_time} = $time_now;
+            close $fh;
+        }
+        sprintf("%d", $cache{pid_stat}[22]/1024);
+    },
+
     # test
     #'z' => sub { use DD; my $i = 0; while (my @c = caller($i++)) { dd \@c } },
     '%' => sub { '%' },
@@ -74,6 +86,7 @@ sub meta { +{
     v => 2,
 } }
 
+my $re = qr/%(_\{\w+\}|[A-Za-z])/;
 sub _layout {
     my $format = shift;
     my $packages_to_ignore = shift;
@@ -83,7 +96,7 @@ sub _layout {
     %per_message_data = ();
 
     my %mentioned_formats;
-    while ($format =~ m/%(.)/g) {
+    while ($format =~ m/$re/g) {
         if (exists $format_for{$1}) {
             $mentioned_formats{$1} = 1;
         } else {
@@ -110,7 +123,7 @@ sub _layout {
             [Devel::Caller::Util::callers(0, 0, $packages_to_ignore, $subroutines_to_ignore)];
     }
 
-    $format =~ s#%(.)#$format_for{$1}->(@_)#eg;
+    $format =~ s#$re#$format_for{$1}->(@_)#eg;
     $format;
 }
 
@@ -173,6 +186,9 @@ Known placeholder in format string:
     logging event
  %T A stack trace of functions called
  %% A literal percent (%) sign
+
+ %_{vmsize}  Process virtual memory size, in KB.
+    Currently works on Linux only. Value is cached for 1 second.
 
 
 =head1 CONFIGURATION
