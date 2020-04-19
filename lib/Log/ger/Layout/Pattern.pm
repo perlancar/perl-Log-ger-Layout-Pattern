@@ -86,7 +86,7 @@ sub meta { +{
     v => 2,
 } }
 
-my $re = qr/%(_\{\w+\}|[A-Za-z])/;
+my $re = qr/%(_\{\w+\}|[A-Za-z%])/;
 sub _layout {
     my $format = shift;
     my $packages_to_ignore = shift;
