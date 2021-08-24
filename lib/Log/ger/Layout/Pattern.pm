@@ -131,11 +131,7 @@ sub get_hooks {
     my %plugin_conf = @_;
 
     $plugin_conf{format} or die "Please specify format";
-    $plugin_conf{packages_to_ignore} //= [
-        "Log::ger",
-        "Log::ger::Layout::Pattern",
-        "Try::Tiny",
-    ];
+    $plugin_conf{packages_to_ignore} //= qr/\A(?:Try::Tiny|Log::ger(?:::.+)?)\z/;
 
     return {
         create_layouter => [
