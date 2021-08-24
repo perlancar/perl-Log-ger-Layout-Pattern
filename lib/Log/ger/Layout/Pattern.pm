@@ -22,7 +22,7 @@ my %cache;
 
 our %format_for = (
     'c' => sub { $_[1]{category} },
-    'C' => sub { $per_message_data{caller1}[0] },
+    'C' => sub { $per_message_data{caller0}[0] },
     'd' => sub {
         my @t = localtime($time_now);
         sprintf(
@@ -39,7 +39,7 @@ our %format_for = (
             $t[2], $t[1], $t[0],
         );
     },
-    'F' => sub { $per_message_data{caller1}[1] },
+    'F' => sub { $per_message_data{caller0}[1] },
     'H' => sub {
         require Sys::Hostname;
         Sys::Hostname::hostname();
@@ -48,11 +48,11 @@ our %format_for = (
         sprintf(
             "%s (%s:%d)",
             $per_message_data{caller1}[3] // '',
-            $per_message_data{caller1}[1],
-            $per_message_data{caller1}[2],
+            $per_message_data{caller0}[1],
+            $per_message_data{caller0}[2],
         );
     },
-    'L' => sub { $per_message_data{caller1}[2] },
+    'L' => sub { $per_message_data{caller0}[2] },
     'm' => sub { $_[0] },
     'M' => sub {
         $per_message_data{caller1}[3] // '';
@@ -109,10 +109,8 @@ sub _layout {
             $mentioned_formats{L} ||
             $mentioned_formats{l}
         ) {
-        #$per_message_data{caller0}  =
-        #    [Devel::Caller::Util::caller (0, 0, $packages_to_ignore, $subroutines_to_ignore)];
-        $per_message_data{caller1}  =
-            [Devel::Caller::Util::caller (1, 0, $packages_to_ignore, $subroutines_to_ignore)];
+        $per_message_data{caller0}  =
+            [Devel::Caller::Util::caller (0, 0, $packages_to_ignore, $subroutines_to_ignore)];
     }
     if ($mentioned_formats{l} ||
             $mentioned_formats{M}
