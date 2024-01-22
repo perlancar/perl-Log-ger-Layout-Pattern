@@ -46,8 +46,9 @@ our %format_for = (
     },
     'l' => sub {
         sprintf(
-            "%s (%s:%d)",
-            $per_message_data{caller1}[3] // '',
+            "%s%s(%s:%d)",
+            $per_message_data{caller1}[3],
+            $per_message_data{caller1}[3] ? ' ' : '',
             $per_message_data{caller0}[1],
             $per_message_data{caller0}[2],
         );
